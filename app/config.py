@@ -35,7 +35,9 @@ class Settings(BaseSettings):
     # KYC uploads. Outside app/static, so the web server never serves them directly.
     upload_dir: Path = PROJECT_DIR / "uploads"
 
+    # Demo-only passwords for `python -m app.seed`. Not secrets: everyone in the demo knows them.
     seed_staff_password: str = "Staff@Demo123"
+    seed_customer_password: str = "Customer@Demo123"
 
     @field_validator("fernet_key")
     @classmethod

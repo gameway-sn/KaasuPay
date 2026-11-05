@@ -1,115 +1,211 @@
 # KaasuPay Loan Portal (FastAPI prototype)
 
 > **DEMO — KaasuPay is fictional. Do not enter real personal data.**
-> This prototype demonstrates security controls. It is **not** production-secure,
+> This prototype **demonstrates** security controls. It is **not** production-secure,
 > and it must only run on localhost or our own LAN.
 
 This is the loan app for our Computer Networks (21CSC302J) team project,
 *"Design and Configuration of a Secure FinTech Enterprise Network using Cisco Packet Tracer"*.
-In the project story it runs on SRV-APP (10.10.40.10, VLAN 40). See [CLAUDE.md](CLAUDE.md) for the full design.
+In the project story it runs on **SRV-APP** (10.10.40.10, VLAN 40) and its database is **SRV-DB**
+(10.10.50.10, VLAN 50, the "vault"). The network is built in Packet Tracer; this app repeats the
+same security design in code, so the project tells one story: **defence in depth, from the network up to the app**.
+
+| In the network (Packet Tracer) | Its twin in this app | Where in the code |
+| --- | --- | --- |
+| VLANs separate departments | 5 roles: customer, support, finance, it_admin, branch_agent | `app/models/user.py` |
+| ACLs give each VLAN only what it needs | `require_role(...)` on every route; [access matrix](#access-matrix) tested | `app/deps.py`, `tests/test_access_matrix.py` |
+| ACL `deny … log` | Every 403 is written to the audit log | `app/deps.py` |
+| Vault VLAN: only SRV-APP and IT reach the DB | Only the API touches the DB; Aadhaar Fernet-encrypted, shown `XXXX XXXX 1234` | `app/services/crypto.py` |
+| IPsec VPN encrypts branch traffic | HTTPS (stretch goal, not done) | — |
+| SSH only, `login block-for` after failures | argon2 passwords, 30-min JWT cookie, OTP 3 tries, login lockout 5 tries / 15 min | `app/security.py`, `app/services/login.py` |
+| Port security, DHCP snooping | Strict validation: PAN, Aadhaar (Verhoeff), uploads checked by their real bytes | `app/schemas/`, `app/services/uploads.py` |
+| `show` commands as evidence | Append-only audit log: who viewed which KYC, who moved money | `app/services/audit.py`, `/staff/admin/audit` |
 
 ## Status
 
-- [x] Phase 0: Setup (hello page, base layout with demo banner)
-- [x] Phase 1: Users and login (phone + OTP registration, argon2, JWT cookie, roles, staff seed)
-- [x] Phase 2: KYC (PAN/Aadhaar checks, Verhoeff, Fernet encryption, safe uploads, support review)
-- [x] Phase 3: Loans (EMI calculator, 50% income rule, offer/accept, finance disbursal, repayment schedule)
-- [x] Phase 4: Repayments (fake online gateway, branch cash collection, one payments ledger, active/closed)
-- [x] Phase 5: Admin and audit (append-only audit log, login lockout, OTP limit, IT admin staff management)
-- [ ] Phase 6: Demo-ready
+All core phases are done: 0 Setup · 1 Users and login · 2 KYC · 3 Loans · 4 Repayments ·
+5 Admin and audit · 6 Demo-ready. Stretch goals (HTTPS, PostgreSQL + Docker networks,
+Razorpay test mode, PDF agreement) are **not** started.
 
-## Run it (Windows PowerShell)
+## Set up (Windows PowerShell, once)
 
-You need Python 3.12 or newer. (If `pytest` fails with an error from `py.py`, use 3.13 instead:
-a file named `py.py` in the Python 3.12 install folder hides a module that pytest needs.)
+You need Python 3.12 or newer. (If `pytest` fails with an error from `py.py`, use 3.13:
+a stray file named `py.py` in a Python 3.12 install folder can hide a module pytest needs.)
 
 ```powershell
-# 1. Create and activate a virtual environment (once)
+# 1. Virtual environment
 py -3.13 -m venv .venv
 .venv\Scripts\Activate.ps1
-# If PowerShell blocks the script, run this once and try again:
-#   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+# If PowerShell blocks the script:  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
-# 2. Install the libraries
+# 2. Libraries
 pip install -r requirements.txt
 
-# 3. Create your local settings file, then fill in the two secrets
+# 3. Settings: copy the example, then paste a fresh value into each of the two secrets
 Copy-Item .env.example .env
 python -c "import secrets; print(secrets.token_urlsafe(32))"                              # -> JWT_SECRET_KEY
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # -> FERNET_KEY
 
-# 4. Create the database tables (run again whenever a new migration is added)
+# 4. Database tables (run again after pulling new migrations)
 alembic upgrade head
 
-# 5. Create the demo staff accounts (safe to run again)
+# 5. Demo data: 4 staff + 9 customers in different states (safe to run again)
 python -m app.seed
 
-# 6. Start the server
+# 6. Start
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000. You should see the red DEMO banner at the top.
+Open http://127.0.0.1:8000. Every page shows the red DEMO banner.
+To let teammates on the same Wi-Fi/LAN open it, use `uvicorn app.main:app --host 0.0.0.0` and give them
+your laptop's IP. **Never** put it on a public host.
 
-### Try it
+## Demo accounts
 
-- **Register as a customer:** go to *Register*, use any fake 10-digit number starting with 6–9.
-  The OTP is printed in the **server console** (the window running uvicorn), in a `[DEMO SMS]` box.
-- **Log in as staff:** phone `9000000001` (support), `9000000002` (finance),
-  `9000000003` (it_admin), `9000000004` (branch_agent). Password: `SEED_STAFF_PASSWORD` from `.env`.
-- **KYC (customer):** from the dashboard, *Start KYC*. Use a fake PAN like `ABCPE1234F`; the page
-  offers a made-up Aadhaar number with a valid checksum. Upload three small JPG/PNG/PDF files
-  (any sample picture, **never a real ID card**).
-- **KYC review (support):** log in as `9000000001`, open *KYC review queue*, approve or reject with a reason.
-  Aadhaar only ever shows as `XXXX XXXX 1234` to staff.
-- **Loan (customer):** with an approved KYC, *Apply for a loan*. Try ₹1,00,000 / 12 months / income ₹40,000 /
-  existing EMIs ₹5,000 → full offer, EMI ₹9,168.00. Try ₹2,00,000 → a counter-offer of ₹1,63,612. Accept it.
-- **Disbursal (finance):** log in as `9000000002`, open *Loan book*, *Review* the accepted loan, *Approve disbursal*.
-  The customer now sees a 12-month repayment schedule.
-- **Pay an EMI (customer):** on a disbursed loan, *Pay EMI #1* opens the DEMO gateway; pay, and the loan
-  turns `active`. Pay them all and it turns `closed`.
-- **Cash at the branch (branch agent):** log in as `9000000004`, *Collect a cash EMI*, type the loan ID,
-  then type the exact amount due. The phone shows masked; no PAN, Aadhaar or KYC documents appear.
-  Finance's loan book shows online vs cash totals from the same ledger.
-- **Lockout:** type a wrong password 5 times. The account is locked for 15 minutes, even with the right password.
-  IT admin can *Unlock* it.
-- **IT admin:** log in as `9000000003`. *Staff accounts*: add, deactivate, unlock, reset a password
-  (temporary passwords are shown once). *Audit log*: filter by category or customer to see e.g. who viewed
-  a customer's KYC, who disbursed and who collected cash, plus every 403.
-- **See the "ACL" working:** log in as a customer and open http://127.0.0.1:8000/staff, and you get **403 Forbidden**.
-  Log out and open it again, and you are sent to the login page. As branch agent (`9000000004`),
-  a KYC document link gives **403**. Another customer opening `/loans/<id>` of someone else's loan gets **404**.
+Staff password: `Staff@Demo123` · Customer password: `Customer@Demo123`
+(set by `SEED_STAFF_PASSWORD` / `SEED_CUSTOMER_PASSWORD` in `.env`).
+
+| Phone | Who | State |
+| --- | --- | --- |
+| 9000000001 | Demo Support Officer | support (VLAN 20) |
+| 9000000002 | Demo Finance Officer | finance (VLAN 10) |
+| 9000000003 | Demo IT Admin | it_admin (VLAN 30) |
+| 9000000004 | Demo Branch Agent | branch_agent (VLAN 110) |
+| 9800000001 | Asha Demo | registered, no KYC yet |
+| 9800000002 | Bala Demo | KYC submitted, waiting for support |
+| 9800000003 | Chitra Demo | KYC rejected (blurred selfie), can resubmit |
+| 9800000004 | Dev Demo | counter-offer: asked ₹2,00,000, offered ₹1,63,612 |
+| 9800000005 | Esha Demo | loan declined by the 50% income rule |
+| 9800000006 | Farhan Demo | accepted ₹1,00,000, waiting for finance to disburse |
+| 9800000007 | Gita Demo | disbursed ₹30,000, first EMI not due yet |
+| 9800000008 | Hari Demo | active: EMI 1 paid online, EMI 2 paid in cash, **EMI 3 overdue** |
+| 9800000009 | Isha Demo | loan fully repaid and closed |
+
+All names, phones, PANs and Aadhaar numbers are made up (the Aadhaar numbers pass the checksum
+but are fake), and the "ID photos" are coloured rectangles generated by the seed script.
+
+## Demo script (about 10 minutes)
+
+Use two browser windows (one normal, one private) so a customer and a staff member can be logged in at once.
+
+1. **Register (OTP).** *Register* with a new fake number, e.g. `9876543210`. The 6-digit code appears in the
+   **uvicorn window** in a `[DEMO SMS]` box. Type a wrong code 3 times: the 4th try says *locked*.
+2. **KYC.** Log in as **Asha** (`9800000001`) → *Start KYC*. PAN `ABCPE1234F`; for Aadhaar copy the made-up
+   number shown on the page. Try PAN `ABCDE1234F` (4th letter must be P) or change one Aadhaar digit
+   (checksum fails). Upload any three small pictures — **never a real ID card**. Renaming a `.txt` to `.png` is refused.
+3. **Support review.** As **support** (`9000000001`) → *KYC review queue*. Aadhaar shows only as
+   `XXXX XXXX ….`. Approve Asha; reject Bala with a reason (Bala then sees the reason and can resubmit).
+4. **Loan decision.** As **Asha** → *Apply for a loan*: ₹1,00,000, 12 months, income ₹40,000, existing EMIs
+   ₹5,000 → offer with **EMI ₹9,168.00**. Show **Dev** (counter-offer) and **Esha** (declined) for the other outcomes.
+   Asha accepts.
+5. **Disbursal.** As **finance** (`9000000002`) → *Loan book* → Asha's (or Farhan's) loan → *Approve disbursal*.
+   The repayment schedule appears; the last EMI differs by a few paise (rounding).
+6. **Repayment.** As **Gita** → *Pay EMI #1* → DEMO gateway → pay; loan becomes `active`. Press Back and pay
+   again: refused (409), no double payment.
+7. **Cash at the branch.** As **branch agent** (`9000000004`) → *Collect a cash EMI* → type Hari's loan ID (`5` after a fresh seed).
+   Only a masked phone, no PAN/Aadhaar. A wrong amount is refused; the exact amount is recorded as `cash`.
+   **Hari**'s dashboard shows the overdue EMI.
+8. **ACL in action.** As support, open http://127.0.0.1:8000/staff/loans → **403**. As branch agent, open
+   http://127.0.0.1:8000/kyc/documents/1 → **403**. Log out and open http://127.0.0.1:8000/staff → login page.
+   As Asha, open another customer's loan, e.g. http://127.0.0.1:8000/loans/1 → **404**.
+9. **Lockout.** Type a wrong password 5 times for any account → locked for 15 minutes, even with the right password.
+10. **Evidence (audit log).** As **IT admin** (`9000000003`) → *Audit log*. Filter *KYC* + a customer to show who
+    viewed their KYC; filter *Payments* for who moved money; *Access denied* shows the 403s from step 8.
+    *Staff accounts*: unlock the locked user, create a staff member (temporary password shown once),
+    deactivate them — they are logged out on their next click. IT admin opening the KYC queue → 403
+    (separation of duties).
+
+## Access matrix
+
+✅ = allowed · ⛔ = 403 Forbidden · not logged in = redirected to the login page for every row.
+Checked route by route, for every role, by `tests/test_access_matrix.py`, which also fails if a new
+route is added without a rule.
+
+| Area (routes) | customer | support | finance | it_admin | branch_agent |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Dashboard, KYC form (`/dashboard`, `/kyc`) | ✅ | ⛔ | ⛔ | ⛔ | ⛔ |
+| KYC documents (`/kyc/documents/{id}`) | ✅ own only (others 404) | ✅ | ⛔ | ⛔ | ⛔ |
+| Apply, accept/decline, pay EMI (`/loans/...`) | ✅ own only (others 404) | ⛔ | ⛔ | ⛔ | ⛔ |
+| Staff home (`/staff`) | ⛔ | ✅ | ✅ | ✅ | ✅ |
+| KYC review queue, approve/reject (`/staff/kyc/...`) | ⛔ | ✅ | ⛔ | ⛔ | ⛔ |
+| Loan book, disbursal (`/staff/loans/...`) | ⛔ | ⛔ | ✅ | ⛔ | ⛔ |
+| Cash collection (`/staff/collect/...`) | ⛔ | ⛔ | ⛔ | ⛔ | ✅ |
+| Staff accounts, audit log (`/staff/admin/...`) | ⛔ | ⛔ | ⛔ | ✅ | ⛔ |
+
+## Packet Tracer test plan → automated tests
+
+| Test plan line | Proved by |
+| --- | --- |
+| support sees only the masked Aadhaar on a KYC page | `tests/test_kyc.py::test_support_sees_only_masked_aadhaar` |
+| support → finance disbursal route = 403 | `tests/test_loans.py::test_support_cannot_disburse` |
+| branch_agent → KYC document route = 403 | `tests/test_kyc.py::test_branch_agent_cannot_open_kyc_document` |
+| customer A → customer B's loan = 404 | `tests/test_loans.py::test_customer_cannot_see_another_customers_loan` |
+| 4th wrong OTP = locked | `tests/test_auth.py::test_fourth_wrong_otp_is_locked` |
+| any `/staff/...` route without login = redirect to login | `tests/test_access_matrix.py::test_access_matrix` (every route) |
+| EMI: ₹1,00,000, 18%, 12 months = ₹9,168.00 | `tests/test_emi_decision.py::test_emi_one_lakh_18_percent_12_months_is_9168` |
+| Verhoeff: a valid sample passes; changing one digit fails | `tests/test_validators.py::test_verhoeff_changing_any_one_digit_fails` |
+| *(extra)* login locked after 5 wrong passwords | `tests/test_admin_audit.py::test_five_wrong_passwords_lock_the_account` |
+| *(extra)* audit log can't be edited, even with raw SQL | `tests/test_admin_audit.py::test_audit_log_cannot_be_changed_with_raw_sql` |
 
 ## Run the tests
 
 ```powershell
-pytest
+pytest                                   # everything (about 220 tests, ~1-2 minutes)
+pytest tests/test_access_matrix.py -v    # just the access matrix, one line per route
 ```
 
-Tests use a fresh in-memory database each time; they never touch `kaasupay.db`.
+Tests use a fresh in-memory database and a temporary uploads folder; they never touch `kaasupay.db`.
+
+## Reset the demo data
+
+The audit log is append-only (the database refuses to delete from it), so a reset means starting a new database:
+
+```powershell
+Remove-Item kaasupay.db
+Get-ChildItem uploads -File | Where-Object Name -ne ".gitkeep" | Remove-Item
+alembic upgrade head
+python -m app.seed
+```
+
+## Known limitations (be honest about these in the report)
+
+This is a teaching prototype. Things a real lender would need that we don't do:
+
+- **No HTTPS** yet (stretch goal), so on a LAN the login cookie travels in clear text. `COOKIE_SECURE=true` once HTTPS exists.
+- **Logout only deletes the cookie.** A copied token stays valid until it expires (max 30 minutes); there is no server-side revoke list.
+- **No CSRF tokens.** We rely on `SameSite=Lax` cookies, which blocks most cross-site form posts but is not a full defence.
+- **Some messages reveal that an account exists:** "already registered" on sign-up and "locked" on login.
+- **Self-declared income.** The decision trusts what the customer types; no credit bureau (by design: no real KYC/credit APIs).
+- **Fake gateway always succeeds.** No failures, no partial payments, no late fees; payments and disbursals can't be reversed.
+- **Uploads:** the 2 MB limit is checked after the file arrives (a real server also limits request size in front of the app);
+  files are recognised by their first bytes, not fully scanned. The same Aadhaar can't be spotted on two customers (each encrypted copy looks different).
+- **Audit log triggers stop the app and stray SQL, not a database administrator** (who can drop a trigger). That's why the
+  vault VLAN keeps everyone except SRV-APP and IT away from SRV-DB.
+- **Temporary staff passwords never expire**, and IT admin can't unlock customer accounts (they wait 15 minutes).
+- **The API docs pages** (`/docs`, `/redoc`) are open — handy for learning, but would be switched off in production.
+- **Secrets in `.env`** on each laptop; a real deployment would use a secrets manager.
 
 ## Project layout
 
 ```
 app/
-  main.py        # creates the app, plugs in the routers, error pages
+  main.py        # creates the app, plugs in the routers, error pages, IP middleware
   config.py      # settings read from .env
   db.py          # database engine + session (get_db)
   deps.py        # get_current_user, require_role(...)  <- the app's "ACL"
   security.py    # argon2 passwords, JWT login cookie
-  seed.py        # demo staff accounts
-  templating.py  # Jinja2 setup
+  seed.py        # demo staff + customers in every state
+  templating.py  # Jinja2 setup, ₹ formatting filter
   models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment, Payment, AuditEvent
-  schemas/       # form validation (phone, OTP, password, PAN, Aadhaar, loan application)
+  schemas/       # form validation (phone, OTP, password, PAN, Aadhaar, loan application, new staff)
   services/      # otp, verhoeff, crypto (Fernet + masking), uploads, kyc,
-                 # money (paise + ₹ formatting), emi, decision (50% rule), loans, payments,
-                 # audit (log + IP middleware), login (lockout), staff (IT admin actions)
-  routers/       # auth, customer, kyc (customer + support review + documents),
-                 # loans (customer + finance loan book/disbursal),
-                 # payments (online gateway + branch cash), staff, admin (staff accounts + audit log)
+                 # money (paise + ₹), emi, decision (50% rule), loans, payments,
+                 # audit (log + IP), login (lockout), staff (IT admin actions)
+  routers/       # auth, customer, kyc, loans, payments, staff, admin
   templates/     # HTML pages (base.html holds the demo banner)
   static/        # CSS
-alembic/         # database migrations
-tests/           # pytest tests
+alembic/         # database migrations (one per phase)
+tests/           # pytest tests, incl. the access matrix
 uploads/         # KYC files under random names; gitignored, served only via /kyc/documents/{id}
 .env.example     # copy to .env; .env is never committed
 ```
