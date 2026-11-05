@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Loan #{{ loan.id }}{% endblock %}
+
+{% block content %}
+  <p><a href="/dashboard">← My dashboard</a></p>
+  <h1>Loan #{{ loan.id }} <span class="badge {{ loan.status }}">{{ loan.status }}</span></h1>
+
+  <div class="card">{% include "loans/_summary.html" %}</div>
+
+  {% if loan.status == "offered" %}
+    <div class="card review-actions">
+      <p>Do you want this loan? Once you accept, our finance team will release the money.</p>
+      <form method="post" action="/loans/{{ loan.id }}/accept">
+        <button type="submit">Accept offer</button>
+      </form>
+      <form method="post" action="/loans/{{ loan.id }}/decline">
+        <button type="submit" class="secondary-button">No thanks, decline</button>
+      </form>
+    </div>
+  {% elif loan.status == "accepted" %}
+    <div class="notice">You accepted this offer. It is waiting for our finance team to disburse it.</div>
+  {% elif loan.status == "declined" %}
+    <p><a href="/loans/apply">Apply again</a></p>
+  {% endif %}
+
+  {% if loan.installments %}
+    <div class="card">
+      <h2>Repayment schedule</h2>
+      {% include "loans/_schedule.html" %}
+      <p class="muted">Paying EMIs arrives in Phase 4.</p>
+    </div>
+  {% endif %}
+{% endblock %}

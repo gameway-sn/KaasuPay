@@ -13,7 +13,7 @@ In the project story it runs on SRV-APP (10.10.40.10, VLAN 40). See [CLAUDE.md](
 - [x] Phase 0: Setup (hello page, base layout with demo banner)
 - [x] Phase 1: Users and login (phone + OTP registration, argon2, JWT cookie, roles, staff seed)
 - [x] Phase 2: KYC (PAN/Aadhaar checks, Verhoeff, Fernet encryption, safe uploads, support review)
-- [ ] Phase 3: Loans
+- [x] Phase 3: Loans (EMI calculator, 50% income rule, offer/accept, finance disbursal, repayment schedule)
 - [ ] Phase 4: Repayments
 - [ ] Phase 5: Admin and audit
 - [ ] Phase 6: Demo-ready
@@ -61,9 +61,13 @@ Open http://127.0.0.1:8000. You should see the red DEMO banner at the top.
   (any sample picture, **never a real ID card**).
 - **KYC review (support):** log in as `9000000001`, open *KYC review queue*, approve or reject with a reason.
   Aadhaar only ever shows as `XXXX XXXX 1234` to staff.
+- **Loan (customer):** with an approved KYC, *Apply for a loan*. Try ₹1,00,000 / 12 months / income ₹40,000 /
+  existing EMIs ₹5,000 → full offer, EMI ₹9,168.00. Try ₹2,00,000 → a counter-offer of ₹1,63,612. Accept it.
+- **Disbursal (finance):** log in as `9000000002`, open *Loan book*, *Review* the accepted loan, *Approve disbursal*.
+  The customer now sees a 12-month repayment schedule.
 - **See the "ACL" working:** log in as a customer and open http://127.0.0.1:8000/staff, and you get **403 Forbidden**.
   Log out and open it again, and you are sent to the login page. As branch agent (`9000000004`),
-  a KYC document link gives **403**.
+  a KYC document link gives **403**. Another customer opening `/loans/<id>` of someone else's loan gets **404**.
 
 ## Run the tests
 
@@ -84,10 +88,12 @@ app/
   security.py    # argon2 passwords, JWT login cookie
   seed.py        # demo staff accounts
   templating.py  # Jinja2 setup
-  models/        # tables: User, OtpCode, KycRecord, KycDocument
-  schemas/       # form validation (phone, OTP, password, PAN, Aadhaar)
-  services/      # otp.py, verhoeff.py, crypto.py (Fernet + masking), uploads.py, kyc.py
-  routers/       # auth.py, customer.py, kyc.py (customer + support review + documents), staff.py
+  models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment
+  schemas/       # form validation (phone, OTP, password, PAN, Aadhaar, loan application)
+  services/      # otp, verhoeff, crypto (Fernet + masking), uploads, kyc,
+                 # money (paise + ₹ formatting), emi, decision (50% rule), loans
+  routers/       # auth, customer, kyc (customer + support review + documents),
+                 # loans (customer + finance loan book/disbursal), staff
   templates/     # HTML pages (base.html holds the demo banner)
   static/        # CSS
 alembic/         # database migrations

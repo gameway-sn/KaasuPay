@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Apply for a loan{% endblock %}
+
+{% block content %}
+  <h1>Apply for a loan</h1>
+
+  {% if open_loan %}
+    <div class="notice">
+      You already have an open loan or offer (#{{ open_loan.id }}, {{ open_loan.status }}).
+      <a href="/loans/{{ open_loan.id }}">View it</a>. You can apply again once it is closed or declined.
+    </div>
+  {% else %}
+    {% if not kyc_approved %}
+      <div class="errors">
+        Your KYC is not approved yet, so an application now will be declined.
+        <a href="/kyc">Go to KYC</a>
+      </div>
+    {% endif %}
+
+    <p>Demo rules: ₹5,000 to ₹2,00,000 · 3 to 24 months · 18% a year ·
+       all your EMIs together must stay within <strong>50% of your monthly income</strong>.
+       You get a decision straight away.</p>
+
+    <form method="post" action="/loans/apply" class="card form">
+      {% include "_form_errors.html" %}
+
+      <label>Loan amount (₹)
+        <input name="amount" value="{{ form.amount or '' }}" inputmode="numeric" placeholder="100000" required>
+      </label>
+
+      <label>Tenure (months)
+        <input type="number" name="tenure_months" value="{{ form.tenure_months or 12 }}" min="3" max="24" required>
+      </label>
+
+      <label>Your monthly income (₹)
+        <input name="monthly_income" value="{{ form.monthly_income or '' }}" inputmode="numeric" placeholder="40000" required>
+      </label>
+
+      <label>EMIs you already pay each month (₹, 0 if none)
+        <input name="existing_emis" value="{{ form.existing_emis or '0' }}" inputmode="numeric">
+      </label>
+
+      <button type="submit">Get my decision</button>
+    </form>
+  {% endif %}
+
+  <p><a href="/dashboard">Back to my dashboard</a></p>
+{% endblock %}

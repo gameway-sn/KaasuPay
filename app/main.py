@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 from app.deps import NotAuthenticated, get_optional_user
 from app.models import User
-from app.routers import auth, customer, kyc, staff
+from app.routers import auth, customer, kyc, loans, staff
 from app.templating import STATIC_DIR, render
 
 app = FastAPI(title=settings.app_name)
@@ -21,6 +21,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(auth.router)
 app.include_router(customer.router)
 app.include_router(kyc.router)
+app.include_router(loans.router)
 app.include_router(staff.router)
 
 

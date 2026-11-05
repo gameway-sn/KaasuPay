@@ -19,6 +19,25 @@
 
   <div class="card">
     <h2>2. Loans</h2>
-    <p class="muted">Apply for a loan once your KYC is approved — coming in Phase 3.</p>
+    {% if loans %}
+      <table class="list">
+        <tr><th>#</th><th>Amount</th><th>EMI</th><th>Months</th><th>Status</th><th></th></tr>
+        {% for loan in loans %}
+          <tr>
+            <td>{{ loan.id }}</td>
+            <td>{{ (loan.offered_amount_paise or loan.requested_amount_paise) | inr }}</td>
+            <td>{{ loan.emi_paise | inr }}</td>
+            <td>{{ loan.tenure_months }}</td>
+            <td><span class="badge {{ loan.status }}">{{ loan.status }}</span></td>
+            <td><a href="/loans/{{ loan.id }}">Open</a></td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">No loans yet.</p>
+    {% endif %}
+    {% if not open_loan %}
+      <p><a class="button" href="/loans/apply">Apply for a loan</a></p>
+    {% endif %}
   </div>
 {% endblock %}

@@ -19,6 +19,7 @@ ROLE_INFO = {
         "vlan": "VLAN 10",
         "can": "Approve disbursal, view the loan book and reports",
         "cannot": "Edit or approve KYC",
+        "links": [("Loan book and disbursals", "/staff/loans")],
     },
     Role.IT_ADMIN: {
         "vlan": "VLAN 30",

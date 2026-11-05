@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Loan #{{ loan.id }}{% endblock %}
+
+{% block content %}
+  <p><a href="/staff/loans">← Loan book</a></p>
+  <h1>Loan #{{ loan.id }} <span class="badge {{ loan.status }}">{{ loan.status }}</span></h1>
+
+  <div class="card">
+    <table class="plain">
+      <tr><th>Customer</th><td>{{ loan.user.full_name }} ({{ loan.user.phone }})</td></tr>
+      <tr><th>Monthly income</th><td>{{ loan.monthly_income_paise | inr }}</td></tr>
+      <tr><th>Existing EMIs</th><td>{{ loan.existing_emis_paise | inr }}</td></tr>
+      {% if loan.disbursed_by %}
+        <tr><th>Disbursed by</th><td>{{ loan.disbursed_by.full_name }} on {{ loan.disbursed_at.strftime("%d %b %Y %H:%M") }} UTC</td></tr>
+      {% endif %}
+    </table>
+    {% include "loans/_summary.html" %}
+  </div>
+
+  {% if loan.status == "accepted" %}
+    <div class="card">
+      <p>The customer accepted this offer. Disbursing releases
+         <strong>{{ loan.offered_amount_paise | inr }}</strong> and creates the repayment schedule.</p>
+      <form method="post" action="/staff/loans/{{ loan.id }}/disburse">
+        <button type="submit">Approve disbursal</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% if loan.installments %}
+    <div class="card">
+      <h2>Repayment schedule</h2>
+      {% include "loans/_schedule.html" %}
+    </div>
+  {% endif %}
+{% endblock %}

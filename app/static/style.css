@@ -147,3 +147,19 @@ table.list th, table.list td { text-align: left; padding: 6px 8px; border-bottom
 
 .review-actions { display: flex; flex-direction: column; gap: 16px; }
 button.danger { background: #b3261e; }
+
+/* ---------- Phase 3: loans ---------- */
+.badge.offered { background: #e3effc; color: #0b4a8a; }
+.badge.accepted { background: #fff4d6; color: #7a5600; }
+.badge.disbursed, .badge.active { background: #e7f5ec; color: #1d5e33; }
+.badge.closed { background: #eef1f5; color: var(--muted); }
+.badge.declined, .badge.overdue { background: #fdecea; color: #8a1c14; }
+.badge.due { background: #fff4d6; color: #7a5600; }
+.badge.paid { background: #e7f5ec; color: #1d5e33; }
+
+.secondary-button { background: #fff; color: var(--brand); border: 1px solid var(--brand); }
+
+.stats { display: flex; flex-wrap: wrap; gap: 12px; }
+.stat { flex: 1 1 180px; margin: 0; }
+.stat-label { color: var(--muted); font-size: 0.85rem; }
+.stat-value { font-size: 1.4rem; font-weight: 700; }

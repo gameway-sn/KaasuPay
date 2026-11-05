@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Loan book{% endblock %}
+
+{% block content %}
+  <h1>Loan book</h1>
+
+  <div class="stats">
+    <div class="card stat"><div class="stat-label">Money disbursed</div><div class="stat-value">{{ disbursed_total | inr }}</div></div>
+    <div class="card stat"><div class="stat-label">Still to be repaid</div><div class="stat-value">{{ outstanding_total | inr }}</div></div>
+    <div class="card stat"><div class="stat-label">Waiting for disbursal</div><div class="stat-value">{{ awaiting | length }}</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Loans by status</h2>
+    <p>
+      {% for s in statuses %}
+        <span class="badge {{ s }}">{{ s }}: {{ counts.get(s, 0) }}</span>
+      {% endfor %}
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Waiting for disbursal</h2>
+    {% if awaiting %}
+      <table class="list">
+        <tr><th>#</th><th>Customer</th><th>Amount</th><th>EMI</th><th>Months</th><th>Accepted (UTC)</th><th></th></tr>
+        {% for loan in awaiting %}
+          <tr>
+            <td>{{ loan.id }}</td>
+            <td>{{ loan.user.full_name }}</td>
+            <td>{{ loan.offered_amount_paise | inr }}</td>
+            <td>{{ loan.emi_paise | inr }}</td>
+            <td>{{ loan.tenure_months }}</td>
+            <td>{{ loan.accepted_at.strftime("%d %b %Y %H:%M") }}</td>
+            <td><a href="/staff/loans/{{ loan.id }}">Review</a></td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">Nothing waiting.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>All loans (latest 100)</h2>
+    <table class="list">
+      <tr><th>#</th><th>Customer</th><th>Asked</th><th>Offered</th><th>Status</th><th></th></tr>
+      {% for loan in loans %}
+        <tr>
+          <td>{{ loan.id }}</td>
+          <td>{{ loan.user.full_name }}</td>
+          <td>{{ loan.requested_amount_paise | inr }}</td>
+          <td>{{ loan.offered_amount_paise | inr }}</td>
+          <td><span class="badge {{ loan.status }}">{{ loan.status }}</span></td>
+          <td><a href="/staff/loans/{{ loan.id }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">No loans yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endblock %}

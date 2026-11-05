@@ -1,0 +1,14 @@
+{# Loan facts, shared by the customer page and the finance page. Needs `loan`. #}
+<table class="plain">
+  <tr><th>Asked for</th><td>{{ loan.requested_amount_paise | inr }} over {{ loan.tenure_months }} months</td></tr>
+  {% if loan.offered_amount_paise %}
+    <tr><th>Offer</th><td><strong>{{ loan.offered_amount_paise | inr }}</strong> at {{ loan.annual_rate_percent }}% a year</td></tr>
+    <tr><th>Monthly EMI</th><td><strong>{{ loan.emi_paise | inr }}</strong> × {{ loan.tenure_months }}</td></tr>
+    <tr><th>Total to repay</th><td>{{ loan.total_payable_paise | inr }}
+      (interest {{ (loan.total_payable_paise - loan.offered_amount_paise) | inr }})</td></tr>
+  {% endif %}
+  <tr><th>Decision</th><td>{{ loan.decision_reason }}</td></tr>
+  {% if loan.installments %}
+    <tr><th>Still to pay</th><td>{{ loan.outstanding_paise | inr }}</td></tr>
+  {% endif %}
+</table>
