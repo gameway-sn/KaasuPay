@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Pay EMI{% endblock %}
+
+{% block content %}
+  <div class="gateway card">
+    <p class="gateway-tag">DEMO payment gateway · no real money moves</p>
+    <h1>Pay EMI #{{ installment.number }} of {{ loan.tenure_months }}</h1>
+    <table class="plain">
+      <tr><th>Loan</th><td>#{{ loan.id }}</td></tr>
+      <tr><th>Due date</th><td>{{ installment.due_date.strftime("%d %b %Y") }}
+        {% if installment.is_overdue %}<span class="badge overdue">overdue</span>{% endif %}</td></tr>
+      <tr><th>Amount</th><td class="big">{{ installment.amount_paise | inr }}</td></tr>
+    </table>
+
+    <form method="post" action="/loans/{{ loan.id }}/pay">
+      {# Says WHICH installment we pay, so a double click can't pay the next one too. #}
+      <input type="hidden" name="installment_id" value="{{ installment.id }}">
+      <button type="submit">Pay {{ installment.amount_paise | inr }}</button>
+    </form>
+    <p><a href="/loans/{{ loan.id }}">Cancel</a></p>
+  </div>
+{% endblock %}

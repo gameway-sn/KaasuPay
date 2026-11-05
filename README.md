@@ -14,7 +14,7 @@ In the project story it runs on SRV-APP (10.10.40.10, VLAN 40). See [CLAUDE.md](
 - [x] Phase 1: Users and login (phone + OTP registration, argon2, JWT cookie, roles, staff seed)
 - [x] Phase 2: KYC (PAN/Aadhaar checks, Verhoeff, Fernet encryption, safe uploads, support review)
 - [x] Phase 3: Loans (EMI calculator, 50% income rule, offer/accept, finance disbursal, repayment schedule)
-- [ ] Phase 4: Repayments
+- [x] Phase 4: Repayments (fake online gateway, branch cash collection, one payments ledger, active/closed)
 - [ ] Phase 5: Admin and audit
 - [ ] Phase 6: Demo-ready
 
@@ -65,6 +65,11 @@ Open http://127.0.0.1:8000. You should see the red DEMO banner at the top.
   existing EMIs ₹5,000 → full offer, EMI ₹9,168.00. Try ₹2,00,000 → a counter-offer of ₹1,63,612. Accept it.
 - **Disbursal (finance):** log in as `9000000002`, open *Loan book*, *Review* the accepted loan, *Approve disbursal*.
   The customer now sees a 12-month repayment schedule.
+- **Pay an EMI (customer):** on a disbursed loan, *Pay EMI #1* opens the DEMO gateway; pay, and the loan
+  turns `active`. Pay them all and it turns `closed`.
+- **Cash at the branch (branch agent):** log in as `9000000004`, *Collect a cash EMI*, type the loan ID,
+  then type the exact amount due. The phone shows masked; no PAN, Aadhaar or KYC documents appear.
+  Finance's loan book shows online vs cash totals from the same ledger.
 - **See the "ACL" working:** log in as a customer and open http://127.0.0.1:8000/staff, and you get **403 Forbidden**.
   Log out and open it again, and you are sent to the login page. As branch agent (`9000000004`),
   a KYC document link gives **403**. Another customer opening `/loans/<id>` of someone else's loan gets **404**.
@@ -88,12 +93,13 @@ app/
   security.py    # argon2 passwords, JWT login cookie
   seed.py        # demo staff accounts
   templating.py  # Jinja2 setup
-  models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment
+  models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment, Payment
   schemas/       # form validation (phone, OTP, password, PAN, Aadhaar, loan application)
   services/      # otp, verhoeff, crypto (Fernet + masking), uploads, kyc,
-                 # money (paise + ₹ formatting), emi, decision (50% rule), loans
+                 # money (paise + ₹ formatting), emi, decision (50% rule), loans, payments
   routers/       # auth, customer, kyc (customer + support review + documents),
-                 # loans (customer + finance loan book/disbursal), staff
+                 # loans (customer + finance loan book/disbursal),
+                 # payments (online gateway + branch cash), staff
   templates/     # HTML pages (base.html holds the demo banner)
   static/        # CSS
 alembic/         # database migrations

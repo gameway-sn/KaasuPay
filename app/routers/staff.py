@@ -30,6 +30,7 @@ ROLE_INFO = {
         "vlan": "VLAN 110",
         "can": "Find a loan by its ID, record a cash EMI collection",
         "cannot": "View KYC documents or Aadhaar",
+        "links": [("Collect a cash EMI", "/staff/collect")],
     },
 }
 

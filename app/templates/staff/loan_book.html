@@ -8,6 +8,8 @@
   <div class="stats">
     <div class="card stat"><div class="stat-label">Money disbursed</div><div class="stat-value">{{ disbursed_total | inr }}</div></div>
     <div class="card stat"><div class="stat-label">Still to be repaid</div><div class="stat-value">{{ outstanding_total | inr }}</div></div>
+    <div class="card stat"><div class="stat-label">Collected online</div><div class="stat-value">{{ collected_online | inr }}</div></div>
+    <div class="card stat"><div class="stat-label">Collected in cash</div><div class="stat-value">{{ collected_cash | inr }}</div></div>
     <div class="card stat"><div class="stat-label">Waiting for disbursal</div><div class="stat-value">{{ awaiting | length }}</div></div>
   </div>
 

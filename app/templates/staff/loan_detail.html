@@ -30,8 +30,15 @@
 
   {% if loan.installments %}
     <div class="card">
-      <h2>Repayment schedule</h2>
+      <h2>Repayment schedule ({{ loan.paid_count }} of {{ loan.tenure_months }} paid)</h2>
       {% include "loans/_schedule.html" %}
+    </div>
+  {% endif %}
+
+  {% if loan.payments %}
+    <div class="card">
+      <h2>Payments ledger</h2>
+      {% include "loans/_payments.html" %}
     </div>
   {% endif %}
 {% endblock %}

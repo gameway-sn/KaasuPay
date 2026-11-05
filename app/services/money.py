@@ -6,6 +6,7 @@ Never floats: in floating point, 0.1 + 0.2 = 0.30000000000000004.
 import re
 
 _WHOLE_RUPEES = re.compile(r"[0-9]{1,12}")
+_RUPEES_AND_PAISE = re.compile(r"([0-9]{1,10})(?:\.([0-9]{1,2}))?")
 
 
 def rupees_to_paise(rupees: int) -> int:
@@ -18,6 +19,16 @@ def parse_rupees(text: str) -> int:
     if not _WHOLE_RUPEES.fullmatch(cleaned):
         raise ValueError("Enter a whole number of rupees, like 50000 or 1,00,000.")
     return int(cleaned)
+
+
+def parse_amount_paise(text: str) -> int:
+    """'9,167.99' or '₹9168' -> paise (916799 / 916800). At most 2 digits after the point."""
+    cleaned = str(text).replace("₹", "").replace(",", "").strip()
+    match = _RUPEES_AND_PAISE.fullmatch(cleaned)
+    if not match:
+        raise ValueError("Enter an amount like 9168 or 9,167.99.")
+    rupees, paise = match.group(1), (match.group(2) or "0").ljust(2, "0")
+    return int(rupees) * 100 + int(paise)
 
 
 def format_inr(paise: int | None) -> str:

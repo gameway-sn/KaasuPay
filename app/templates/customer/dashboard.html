@@ -21,7 +21,7 @@
     <h2>2. Loans</h2>
     {% if loans %}
       <table class="list">
-        <tr><th>#</th><th>Amount</th><th>EMI</th><th>Months</th><th>Status</th><th></th></tr>
+        <tr><th>#</th><th>Amount</th><th>EMI</th><th>Months</th><th>Status</th><th>Next EMI due</th><th></th></tr>
         {% for loan in loans %}
           <tr>
             <td>{{ loan.id }}</td>
@@ -29,6 +29,12 @@
             <td>{{ loan.emi_paise | inr }}</td>
             <td>{{ loan.tenure_months }}</td>
             <td><span class="badge {{ loan.status }}">{{ loan.status }}</span></td>
+            <td>
+              {% set next = loan.next_installment %}
+              {% if next %}{{ next.due_date.strftime("%d %b %Y") }}
+                {% if next.is_overdue %}<span class="badge overdue">overdue</span>{% endif %}
+              {% endif %}
+            </td>
             <td><a href="/loans/{{ loan.id }}">Open</a></td>
           </tr>
         {% endfor %}

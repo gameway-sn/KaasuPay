@@ -26,3 +26,8 @@ def decrypt(token: str) -> str:
 def mask_aadhaar(last4: str) -> str:
     """What staff see: 'XXXX XXXX 2346'."""
     return f"XXXX XXXX {last4}"
+
+
+def mask_phone(phone: str) -> str:
+    """What branch agents see: 'XXXXXX3210'. Enough to confirm with the customer, no more."""
+    return "X" * (len(phone) - 4) + phone[-4:]

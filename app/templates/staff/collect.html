@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Collect cash EMI{% endblock %}
+
+{% block content %}
+  <h1>Collect a cash EMI</h1>
+
+  <form method="get" action="/staff/collect" class="card search">
+    <label>Loan ID <input name="loan_id" value="{{ searched or '' }}" inputmode="numeric" placeholder="e.g. 7" required></label>
+    <button type="submit">Find loan</button>
+  </form>
+
+  {% if not loan %}{% include "_form_errors.html" %}{% endif %}
+
+  {% if loan %}
+    {% if done %}<div class="notice">Cash payment recorded. The receipt is in the list below.</div>{% endif %}
+
+    <div class="card">
+      <h2>Loan #{{ loan.id }} <span class="badge {{ loan.status }}">{{ loan.status }}</span></h2>
+      {# Branch agents see only what they need: no PAN, no Aadhaar, no KYC documents, masked phone. #}
+      <table class="plain">
+        <tr><th>Customer</th><td>{{ loan.user.full_name }}</td></tr>
+        <tr><th>Phone</th><td><code>{{ masked_phone }}</code> (ask the customer to confirm)</td></tr>
+        <tr><th>EMIs paid</th><td>{{ loan.paid_count }} of {{ loan.tenure_months }}</td></tr>
+        <tr><th>Still to pay</th><td>{{ loan.outstanding_paise | inr }}</td></tr>
+      </table>
+    </div>
+
+    {% set next = loan.next_installment %}
+    {% if next and loan.status in ("disbursed", "active") %}
+      <form method="post" action="/staff/collect/{{ loan.id }}" class="card form">
+        {% include "_form_errors.html" %}
+        <p>Next EMI: <strong>#{{ next.number }}</strong>, due {{ next.due_date.strftime("%d %b %Y") }}
+           {% if next.is_overdue %}<span class="badge overdue">overdue</span>{% endif %}<br>
+           Amount due: <strong>{{ next.amount_paise | inr }}</strong></p>
+        <input type="hidden" name="installment_id" value="{{ next.id }}">
+        <label>Cash received (₹) — must match exactly
+          <input name="amount" inputmode="decimal" placeholder="{{ '%.2f' % (next.amount_paise / 100) }}" autocomplete="off" required>
+        </label>
+        <button type="submit">Record cash payment</button>
+      </form>
+    {% else %}
+      {% include "_form_errors.html" %}
+      <div class="notice">This loan has nothing to collect ({{ loan.status }}).</div>
+    {% endif %}
+
+    {% if loan.payments %}
+      <div class="card">
+        <h2>Payments on this loan</h2>
+        {% include "loans/_payments.html" %}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -6,6 +6,13 @@
   <p><a href="/dashboard">← My dashboard</a></p>
   <h1>Loan #{{ loan.id }} <span class="badge {{ loan.status }}">{{ loan.status }}</span></h1>
 
+  {% if just_paid %}
+    <div class="notice">Payment received, thank you. Your receipt is listed below.</div>
+  {% endif %}
+  {% if loan.status == "closed" %}
+    <div class="notice">🎉 This loan is fully repaid and closed.</div>
+  {% endif %}
+
   <div class="card">{% include "loans/_summary.html" %}</div>
 
   {% if loan.status == "offered" %}
@@ -24,11 +31,28 @@
     <p><a href="/loans/apply">Apply again</a></p>
   {% endif %}
 
+  {% set next = loan.next_installment %}
+  {% if next and loan.status in ("disbursed", "active") %}
+    <div class="card">
+      <p>Next EMI: <strong>#{{ next.number }}</strong>, {{ next.amount_paise | inr }},
+         due {{ next.due_date.strftime("%d %b %Y") }}
+         {% if next.is_overdue %}<span class="badge overdue">overdue</span>{% endif %}</p>
+      <p><a class="button" href="/loans/{{ loan.id }}/pay">Pay EMI #{{ next.number }}</a></p>
+      <p class="muted">You can also pay in cash at a KaasuPay branch. Give them loan ID <strong>#{{ loan.id }}</strong>.</p>
+    </div>
+  {% endif %}
+
   {% if loan.installments %}
     <div class="card">
-      <h2>Repayment schedule</h2>
+      <h2>Repayment schedule ({{ loan.paid_count }} of {{ loan.tenure_months }} paid)</h2>
       {% include "loans/_schedule.html" %}
-      <p class="muted">Paying EMIs arrives in Phase 4.</p>
+    </div>
+  {% endif %}
+
+  {% if loan.payments %}
+    <div class="card">
+      <h2>Receipts</h2>
+      {% include "loans/_payments.html" %}
     </div>
   {% endif %}
 {% endblock %}

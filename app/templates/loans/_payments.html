@@ -1,0 +1,14 @@
+{# Receipts from the payments ledger. Needs `loan`. #}
+<table class="list">
+  <tr><th>EMI #</th><th>Paid (UTC)</th><th>Amount</th><th>Method</th><th>Reference</th><th>Recorded by</th></tr>
+  {% for p in loan.payments %}
+    <tr>
+      <td>{{ p.installment.number }}</td>
+      <td>{{ p.paid_at.strftime("%d %b %Y %H:%M") }}</td>
+      <td>{{ p.amount_paise | inr }}</td>
+      <td><span class="badge {{ 'paid' if p.method == 'online' else 'cash' }}">{{ p.method }}</span></td>
+      <td><code>{{ p.reference }}</code></td>
+      <td>{{ p.recorded_by.full_name }}</td>
+    </tr>
+  {% endfor %}
+</table>

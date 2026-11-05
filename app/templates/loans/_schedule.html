@@ -1,6 +1,6 @@
 {# Repayment schedule table. Needs `loan` with installments. #}
 <table class="list">
-  <tr><th>#</th><th>Due date</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Status</th></tr>
+  <tr><th>#</th><th>Due date</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Status</th><th>Paid on</th></tr>
   {% for inst in loan.installments %}
     <tr>
       <td>{{ inst.number }}</td>
@@ -9,6 +9,7 @@
       <td>{{ inst.principal_paise | inr }}</td>
       <td>{{ inst.interest_paise | inr }}</td>
       <td><span class="badge {{ inst.display_status }}">{{ inst.display_status }}</span></td>
+      <td>{% if inst.payment %}{{ inst.payment.paid_at.strftime("%d %b %Y") }} ({{ inst.payment.method }}){% endif %}</td>
     </tr>
   {% endfor %}
 </table>

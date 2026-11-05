@@ -61,6 +61,9 @@ class Loan(Base):
     installments: Mapped[list["Installment"]] = relationship(
         back_populates="loan", cascade="all, delete-orphan", order_by="Installment.number"
     )
+    payments: Mapped[list["Payment"]] = relationship(  # noqa: F821  (defined in payment.py)
+        back_populates="loan", order_by="Payment.id"
+    )
 
     @property
     def is_open(self) -> bool:
@@ -80,6 +83,15 @@ class Loan(Base):
     def outstanding_paise(self) -> int:
         return sum(i.amount_paise for i in self.installments if i.status == InstallmentStatus.DUE)
 
+    @property
+    def next_installment(self) -> "Installment | None":
+        """The earliest unpaid installment: EMIs are always paid in order."""
+        return next((i for i in self.installments if i.status == InstallmentStatus.DUE), None)
+
+    @property
+    def paid_count(self) -> int:
+        return sum(1 for i in self.installments if i.status == InstallmentStatus.PAID)
+
 
 class Installment(Base):
     __tablename__ = "installments"
@@ -95,6 +107,7 @@ class Installment(Base):
     status: Mapped[str] = mapped_column(String(10), default=InstallmentStatus.DUE)
 
     loan: Mapped[Loan] = relationship(back_populates="installments")
+    payment: Mapped["Payment | None"] = relationship(back_populates="installment")  # noqa: F821
 
     @property
     def is_overdue(self) -> bool:

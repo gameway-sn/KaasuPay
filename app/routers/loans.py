@@ -15,7 +15,9 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import require_role
-from app.models import Installment, InstallmentStatus, KycStatus, Loan, LoanStatus, Role, User
+from app.models import (
+    Installment, InstallmentStatus, KycStatus, Loan, LoanStatus, Payment, PaymentMethod, Role, User,
+)
 from app.schemas.common import error_messages
 from app.schemas.loans import LoanApplicationForm
 from app.services.kyc import get_kyc
@@ -86,10 +88,12 @@ def _my_loan(db: Session, user: User, loan_id: int) -> Loan:
 def loan_page(
     request: Request,
     loan_id: int,
+    paid: bool = False,
     user: User = Depends(require_role(Role.CUSTOMER)),
     db: Session = Depends(get_db),
 ):
-    return render(request, "loans/detail.html", {"user": user, "loan": _my_loan(db, user, loan_id)})
+    return render(request, "loans/detail.html",
+                  {"user": user, "loan": _my_loan(db, user, loan_id), "just_paid": paid})
 
 
 @router.post("/loans/{loan_id}/accept")
@@ -135,6 +139,9 @@ def loan_book(
         select(func.coalesce(func.sum(Installment.amount_paise), 0))
         .where(Installment.status == InstallmentStatus.DUE)
     )
+    collected = dict(db.execute(
+        select(Payment.method, func.sum(Payment.amount_paise)).group_by(Payment.method)
+    ).all())
     awaiting = db.scalars(
         select(Loan).where(Loan.status == LoanStatus.ACCEPTED).order_by(Loan.accepted_at)
     ).all()
@@ -145,6 +152,8 @@ def loan_book(
         "counts": counts,
         "disbursed_total": disbursed_total,
         "outstanding_total": outstanding_total,
+        "collected_online": collected.get(PaymentMethod.ONLINE, 0),
+        "collected_cash": collected.get(PaymentMethod.CASH, 0),
         "awaiting": awaiting,
         "loans": all_loans,
     })
