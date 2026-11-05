@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Staff{% endblock %}
+
+{% block content %}
+  <h1>Staff area</h1>
+  <p>Logged in as <strong>{{ user.full_name }}</strong>, role <span class="role">{{ user.role }}</span>
+     (in the network this department is <strong>{{ info.vlan }}</strong>).</p>
+
+  <div class="card">
+    <table class="plain">
+      <tr><th>You can</th><td>{{ info.can }}</td></tr>
+      <tr><th>You cannot</th><td>{{ info.cannot }}</td></tr>
+    </table>
+  </div>
+
+  <p class="muted">Your work screens arrive in the next phases (KYC queue in Phase 2,
+     disbursal in Phase 3, cash collection in Phase 4, staff admin and audit log in Phase 5).</p>
+{% endblock %}

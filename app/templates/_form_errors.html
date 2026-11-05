@@ -1,0 +1,8 @@
+{# Included inside forms: shows the list in `errors`, if any. #}
+{% if errors %}
+  <div class="errors" role="alert">
+    <ul>
+      {% for message in errors %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+  </div>
+{% endif %}

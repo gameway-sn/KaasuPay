@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+  <h1>Create your account</h1>
+  <p>Step 1 of 2. We'll "send" a 6-digit code to your phone. In this demo, the code
+     appears in the <strong>server console window</strong>, not as a real SMS.</p>
+
+  <form method="post" action="/register" class="card form">
+    {% include "_form_errors.html" %}
+
+    <label>Full name
+      <input name="full_name" value="{{ form.full_name or '' }}" maxlength="100" autocomplete="name" required>
+    </label>
+
+    <label>Mobile number (10 digits, fake)
+      <input name="phone" value="{{ form.phone or '' }}" inputmode="numeric" maxlength="10"
+             pattern="[6-9][0-9]{9}" placeholder="9876543210" required>
+    </label>
+
+    <button type="submit">Send code</button>
+  </form>
+
+  <p>Already registered? <a href="/login">Log in</a></p>
+{% endblock %}

@@ -1,0 +1,120 @@
+/* Plain CSS, no framework. */
+:root {
+  --brand: #0b5cad;
+  --bg: #f5f7fa;
+  --text: #1c2430;
+  --muted: #5b6573;
+  --card: #ffffff;
+  --border: #d9dee5;
+  --danger-bg: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.demo-banner {
+  background: var(--danger-bg);
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+nav a { margin-left: 16px; color: var(--brand); text-decoration: none; }
+
+.container { max-width: 880px; margin: 0 auto; padding: 24px 16px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+
+.site-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 24px 16px;
+}
+
+/* ---------- Phase 1: nav, forms, messages ---------- */
+nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+nav a { margin-left: 0; }
+.who { color: var(--muted); font-size: 0.9rem; }
+.role {
+  font-family: ui-monospace, Consolas, monospace;
+  background: #e8eef7;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+form.inline { display: inline; margin: 0; }
+
+.form { display: flex; flex-direction: column; gap: 14px; max-width: 420px; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.form input {
+  font: inherit;
+  font-weight: 400;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.form input:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+
+button, .button {
+  font: inherit;
+  display: inline-block;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.button.secondary { background: #fff; color: var(--brand); border: 1px solid var(--brand); }
+.link-button { background: none; color: var(--brand); padding: 0; }
+
+.errors {
+  background: #fdecea;
+  border: 1px solid #f5c2bd;
+  color: #8a1c14;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.errors ul { margin: 0; padding-left: 18px; }
+.notice {
+  background: #e7f5ec;
+  border: 1px solid #b7e1c4;
+  color: #1d5e33;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.muted { color: var(--muted); }
+
+table.plain { border-collapse: collapse; }
+table.plain th, table.plain td { text-align: left; padding: 6px 12px 6px 0; vertical-align: top; }

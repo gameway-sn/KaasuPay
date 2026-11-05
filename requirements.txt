@@ -1,0 +1,16 @@
+# Phase 0 — web app basics
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+jinja2==3.1.5
+pydantic-settings==2.7.1
+
+# Phase 1 — users and login
+python-multipart==0.0.20   # lets FastAPI read HTML form posts
+sqlalchemy==2.0.36
+alembic==1.14.0
+argon2-cffi==23.1.0
+PyJWT==2.10.1
+
+# Tests
+pytest==8.3.4
+httpx==0.28.1

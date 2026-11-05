@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Enter code{% endblock %}
+
+{% block content %}
+  <h1>Enter your code</h1>
+  <p>Step 2 of 2. We sent a 6-digit code to <strong>{{ phone }}</strong>
+     (look in the server console). It is valid for 5 minutes, and you get 3 tries.</p>
+
+  <form method="post" action="/register/verify" class="card form">
+    {% include "_form_errors.html" %}
+
+    <input type="hidden" name="phone" value="{{ phone }}">
+
+    <label>6-digit code
+      <input name="otp" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
+             autocomplete="one-time-code" required>
+    </label>
+
+    <label>Choose a password (8+ characters)
+      <input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+    </label>
+
+    <label>Type the password again
+      <input type="password" name="confirm_password" minlength="8" maxlength="128" autocomplete="new-password" required>
+    </label>
+
+    <button type="submit">Create account</button>
+  </form>
+
+  <p>No code, or it expired? <a href="/register">Register again</a> to get a new one.</p>
+{% endblock %}

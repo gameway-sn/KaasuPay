@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+  <h1>{{ app_name }}</h1>
+  <p>Small personal loans, from registration to repayment — a demo of defence in depth.</p>
+
+  {% if user %}
+    <p><a class="button" href="{{ user.home_url }}">Go to my page</a></p>
+  {% else %}
+    <p>
+      <a class="button" href="/register">Register</a>
+      <a class="button secondary" href="/login">Log in</a>
+    </p>
+  {% endif %}
+
+  <div class="card">
+    <h2>How it works</h2>
+    <ol>
+      <li>Register with your phone and an OTP</li>
+      <li>Complete KYC (simulated) — coming in Phase 2</li>
+      <li>Apply for a loan and see your EMI — Phase 3</li>
+      <li>Pay EMIs online or in cash at a branch — Phase 4</li>
+    </ol>
+  </div>
+{% endblock %}

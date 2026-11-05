@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}My dashboard{% endblock %}
+
+{% block content %}
+  <h1>Welcome, {{ user.full_name }}</h1>
+  <p>Phone: {{ user.phone }} · verified</p>
+
+  <div class="card">
+    <h2>Next steps</h2>
+    <ol>
+      <li>Complete KYC — coming in Phase 2</li>
+      <li>Apply for a loan — Phase 3</li>
+    </ol>
+  </div>
+{% endblock %}
