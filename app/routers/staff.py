@@ -25,6 +25,7 @@ ROLE_INFO = {
         "vlan": "VLAN 30",
         "can": "Manage staff accounts, read the audit log",
         "cannot": "Approve KYC or loans (separation of duties)",
+        "links": [("Staff accounts", "/staff/admin/staff"), ("Audit log", "/staff/admin/audit")],
     },
     Role.BRANCH_AGENT: {
         "vlan": "VLAN 110",

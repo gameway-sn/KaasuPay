@@ -14,10 +14,11 @@ from app.models import (
     OPEN_LOAN_STATUSES, Installment, KycStatus, Loan, LoanStatus, User,
 )
 from app.schemas.loans import LoanApplicationForm
+from app.services.audit import record
 from app.services.decision import decide
 from app.services.emi import ANNUAL_RATE_PERCENT, repayment_schedule
 from app.services.kyc import get_kyc
-from app.services.money import rupees_to_paise
+from app.services.money import format_inr, rupees_to_paise
 
 
 class LoanStateError(Exception):
@@ -71,6 +72,10 @@ def apply_for_loan(db: Session, user: User, form: LoanApplicationForm) -> Loan:
     loan.emi_paise = decision.emi_paise
     loan.decision_reason = decision.reason
     loan.decided_at = utcnow()
+    db.flush()  # gives the loan its id for the audit line
+    record(db, user, "loan.apply", target_type="loan", target_id=loan.id, customer_id=user.id,
+           detail=f"asked {format_inr(loan.requested_amount_paise)} -> {loan.status}"
+                  + (f" {format_inr(loan.offered_amount_paise)}" if loan.offered_amount_paise else ""))
     db.commit()
     return loan
 
@@ -84,6 +89,7 @@ def accept_offer(db: Session, loan: Loan) -> None:
     _require(loan, LoanStatus.OFFERED)
     loan.status = LoanStatus.ACCEPTED
     loan.accepted_at = utcnow()
+    record(db, loan.user, "loan.accept", target_type="loan", target_id=loan.id, customer_id=loan.user_id)
     db.commit()
 
 
@@ -91,6 +97,7 @@ def decline_offer(db: Session, loan: Loan) -> None:
     _require(loan, LoanStatus.OFFERED)
     loan.status = LoanStatus.DECLINED
     loan.decision_reason = "You declined this offer."
+    record(db, loan.user, "loan.decline", target_type="loan", target_id=loan.id, customer_id=loan.user_id)
     db.commit()
 
 
@@ -117,4 +124,6 @@ def disburse(db: Session, loan: Loan, staff: User) -> None:
     loan.status = LoanStatus.DISBURSED
     loan.disbursed_at = utcnow()
     loan.disbursed_by_id = staff.id
+    record(db, staff, "loan.disburse", target_type="loan", target_id=loan.id, customer_id=loan.user_id,
+           detail=f"{format_inr(loan.offered_amount_paise)} disbursed, {loan.tenure_months} EMIs scheduled")
     db.commit()

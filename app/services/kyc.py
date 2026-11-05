@@ -12,6 +12,7 @@ from app.db import utcnow
 from app.models import KycDocument, KycRecord, KycStatus, User
 from app.schemas.kyc import KycForm
 from app.services import verhoeff
+from app.services.audit import record
 from app.services.crypto import encrypt
 from app.services.uploads import CheckedFile, delete_file, save_file
 
@@ -60,6 +61,8 @@ def submit_kyc(db: Session, user: User, form: KycForm, files: dict[str, CheckedF
         kyc.rejection_reason = None
         kyc.reviewed_at = None
         kyc.reviewed_by_id = None
+        db.flush()  # gives a new KYC its id for the audit line
+        record(db, user, "kyc.submit", target_type="kyc", target_id=kyc.id, customer_id=user.id)
         db.commit()
     except Exception:
         # Database save failed: remove the files we just wrote, so nothing is left behind.
@@ -80,6 +83,8 @@ def _review(db: Session, kyc: KycRecord, reviewer: User, status: KycStatus, reas
     kyc.rejection_reason = reason
     kyc.reviewed_at = utcnow()
     kyc.reviewed_by_id = reviewer.id
+    record(db, reviewer, f"kyc.{status}", target_type="kyc", target_id=kyc.id,
+           customer_id=kyc.user_id, detail=reason or "")
     db.commit()
 
 

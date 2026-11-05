@@ -36,9 +36,18 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
+    # Login lockout (like `login block-for` on the routers): 5 wrong passwords -> 15 minutes.
+    # server_default fills in 0 for users who already exist when the migration runs.
+    failed_login_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    locked_until: Mapped[datetime | None]
+
     @property
     def is_staff(self) -> bool:
         return self.role != Role.CUSTOMER
+
+    @property
+    def is_locked(self) -> bool:
+        return self.locked_until is not None and self.locked_until > utcnow()
 
     @property
     def home_url(self) -> str:

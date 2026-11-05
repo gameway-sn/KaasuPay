@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Audit log{% endblock %}
+
+{% block content %}
+  <h1>Audit log</h1>
+  <p class="muted">Append-only: events can be added but never changed or deleted.
+     Newest first, up to {{ page_size }} rows. Times are UTC.</p>
+
+  <form method="get" action="/staff/admin/audit" class="card search">
+    <label>Category
+      <select name="category">
+        <option value="">All</option>
+        {% for label, prefix in categories.items() %}
+          <option value="{{ prefix }}" {% if category == prefix %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>About customer
+      <select name="customer_id">
+        <option value="">Any</option>
+        {% for c in customers %}
+          <option value="{{ c.id }}" {% if customer_id == c.id|string %}selected{% endif %}>{{ c.full_name }} (#{{ c.id }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Filter</button>
+  </form>
+
+  {% if customer %}<p>Showing events about <strong>{{ customer.full_name }}</strong>.</p>{% endif %}
+
+  <div class="card">
+    <table class="list audit">
+      <tr><th>#</th><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Customer</th><th>Detail</th><th>IP</th></tr>
+      {% for e in events %}
+        <tr class="{{ 'deny' if e.action in ('access.denied', 'auth.locked', 'auth.login_blocked') }}">
+          <td>{{ e.id }}</td>
+          <td>{{ e.at.strftime("%d %b %H:%M:%S") }}</td>
+          <td>{% if e.actor %}{{ e.actor.full_name }} <span class="role">{{ e.actor_role }}</span>{% else %}<span class="muted">not logged in</span>{% endif %}</td>
+          <td><code>{{ e.action }}</code></td>
+          <td>{% if e.target_type %}{{ e.target_type }}{% if e.target_id %} #{{ e.target_id }}{% endif %}{% endif %}</td>
+          <td>{{ e.customer.full_name if e.customer else "" }}</td>
+          <td>{{ e.detail }}</td>
+          <td>{{ e.ip or "" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="muted">No events.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endblock %}

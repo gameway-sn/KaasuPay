@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Staff accounts{% endblock %}
+
+{% block content %}
+  <h1>Staff accounts</h1>
+
+  {% if new_password %}
+    <div class="notice">
+      Temporary password for <strong>{{ new_password[0].full_name }}</strong> ({{ new_password[0].phone }}):
+      <code class="big">{{ new_password[1] }}</code><br>
+      Give it to them now. <strong>It is shown only once</strong>; we store only its hash.
+    </div>
+  {% endif %}
+  {% if errors and not form %}{% include "_form_errors.html" %}{% endif %}
+
+  <div class="card">
+    <table class="list">
+      <tr><th>Name</th><th>Phone</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+      {% for s in staff %}
+        <tr>
+          <td>{{ s.full_name }}{% if s.id == user.id %} <span class="muted">(you)</span>{% endif %}</td>
+          <td>{{ s.phone }}</td>
+          <td><span class="role">{{ s.role }}</span></td>
+          <td>
+            {% if not s.is_active %}<span class="badge declined">deactivated</span>
+            {% elif s.is_locked %}<span class="badge overdue">locked</span>
+            {% else %}<span class="badge approved">active</span>{% endif %}
+          </td>
+          <td class="actions">
+            {% if s.is_active and s.id != user.id %}
+              <form method="post" action="/staff/admin/staff/{{ s.id }}/deactivate" class="inline">
+                <button type="submit" class="link-button">Deactivate</button></form>
+            {% elif not s.is_active %}
+              <form method="post" action="/staff/admin/staff/{{ s.id }}/activate" class="inline">
+                <button type="submit" class="link-button">Activate</button></form>
+            {% endif %}
+            {% if s.is_locked %}
+              <form method="post" action="/staff/admin/staff/{{ s.id }}/unlock" class="inline">
+                <button type="submit" class="link-button">Unlock</button></form>
+            {% endif %}
+            <form method="post" action="/staff/admin/staff/{{ s.id }}/reset-password" class="inline">
+              <button type="submit" class="link-button">Reset password</button></form>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <h2>Add a staff member</h2>
+  <form method="post" action="/staff/admin/staff" class="card form">
+    {% if form %}{% include "_form_errors.html" %}{% endif %}
+    <label>Full name <input name="full_name" value="{{ form.full_name or '' }}" maxlength="100" required></label>
+    <label>Mobile number (fake) <input name="phone" value="{{ form.phone or '' }}" inputmode="numeric"
+           maxlength="10" pattern="[6-9][0-9]{9}" required></label>
+    <label>Role
+      <select name="role" required>
+        {% for r in roles %}<option value="{{ r }}" {% if form.role == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit">Create account</button>
+  </form>
+  <p class="muted">Customers register themselves; they can't be created or changed here.</p>
+{% endblock %}

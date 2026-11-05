@@ -20,6 +20,7 @@ from app.schemas.kyc import KycForm, RejectForm
 from app.services.kyc import (
     KycStateError, approve_kyc, can_submit, get_kyc, make_fake_aadhaar, reject_kyc, submit_kyc,
 )
+from app.services.audit import record
 from app.services.uploads import UploadError, check_upload, path_for
 from app.templating import render
 
@@ -126,7 +127,11 @@ def kyc_review(
     user: User = Depends(require_role(Role.SUPPORT)),
     db: Session = Depends(get_db),
 ):
-    return _review_page(request, user, _load_kyc(db, kyc_id))
+    kyc = _load_kyc(db, kyc_id)
+    # "Who viewed which customer's KYC" — logged every time the page is opened.
+    record(db, user, "kyc.view", target_type="kyc", target_id=kyc.id, customer_id=kyc.user_id)
+    db.commit()
+    return _review_page(request, user, kyc)
 
 
 @router.post("/staff/kyc/{kyc_id}/approve")
@@ -179,6 +184,10 @@ def kyc_document(
     path = path_for(doc.stored_name)
     if not path.exists():
         raise HTTPException(404, "No such document.")
+
+    record(db, user, "kyc.document_view", target_type="kyc", target_id=doc.kyc_id,
+           customer_id=doc.kyc.user_id, detail=doc.label)
+    db.commit()
 
     return FileResponse(path, media_type=doc.content_type, headers={
         "Content-Disposition": "inline",

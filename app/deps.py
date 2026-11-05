@@ -2,6 +2,7 @@
 
 require_role(...) is the app's ACL: every protected route lists the roles
 that may use it, just like each VLAN's ACL lists what it may reach.
+Every refusal is written to the audit log, like an ACL "deny ... log" line.
 """
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import User
 from app.security import COOKIE_NAME, read_access_token
+from app.services.audit import record
 
 
 class NotAuthenticated(Exception):
@@ -42,8 +44,11 @@ def require_role(*roles: str):
     Usage:  user: User = Depends(require_role(Role.SUPPORT, Role.FINANCE))
     """
 
-    def checker(user: User = Depends(get_current_user)) -> User:
+    def checker(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
         if user.role not in roles:
+            record(db, user, "access.denied", target_type="path",
+                   detail=f"{request.method} {request.url.path}")
+            db.commit()
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Your role is not allowed to open this page.")
         return user
 

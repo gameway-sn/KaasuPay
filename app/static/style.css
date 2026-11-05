@@ -172,3 +172,10 @@ button.danger { background: #b3261e; }
 .search { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .search label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
 .search input { font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; }
+
+/* ---------- Phase 5: admin and audit ---------- */
+.form select, .search select { font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+td.actions { white-space: nowrap; }
+td.actions form + form { margin-left: 10px; }
+table.audit { font-size: 0.88rem; }
+table.audit tr.deny td { background: #fdf3f2; }

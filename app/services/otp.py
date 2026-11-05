@@ -1,6 +1,8 @@
 """One-time codes: create, "send" (print to console), and check.
 
 Rules (from CLAUDE.md): 6 digits, valid 5 minutes, locked after 3 wrong tries.
+Plus (Phase 5): at most 3 codes per phone in 15 minutes, so the "3 tries"
+rule can't be dodged by asking for a fresh code again and again.
 """
 import hashlib
 import hmac
@@ -8,7 +10,7 @@ import secrets
 from datetime import timedelta
 from enum import Enum
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -17,6 +19,12 @@ from app.models import OtpCode
 
 OTP_VALID_MINUTES = 5
 MAX_ATTEMPTS = 3
+MAX_CODES_PER_WINDOW = 3
+WINDOW_MINUTES = 15
+
+
+class OtpRateLimited(Exception):
+    """Too many codes asked for this phone recently."""
 
 
 class OtpResult(Enum):
@@ -41,6 +49,17 @@ def _hash(code: str) -> str:
 
 def send_otp(db: Session, phone: str) -> str:
     """Make a new code for this phone, cancel any older ones, and "send" it."""
+    recent = db.scalar(
+        select(func.count()).select_from(OtpCode).where(
+            OtpCode.phone == phone,
+            OtpCode.created_at > utcnow() - timedelta(minutes=WINDOW_MINUTES),
+        )
+    )
+    if recent >= MAX_CODES_PER_WINDOW:
+        raise OtpRateLimited(
+            f"Too many codes asked for this phone. Please wait {WINDOW_MINUTES} minutes and try again."
+        )
+
     db.execute(
         update(OtpCode)
         .where(OtpCode.phone == phone, OtpCode.used.is_(False))

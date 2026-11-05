@@ -15,7 +15,7 @@ In the project story it runs on SRV-APP (10.10.40.10, VLAN 40). See [CLAUDE.md](
 - [x] Phase 2: KYC (PAN/Aadhaar checks, Verhoeff, Fernet encryption, safe uploads, support review)
 - [x] Phase 3: Loans (EMI calculator, 50% income rule, offer/accept, finance disbursal, repayment schedule)
 - [x] Phase 4: Repayments (fake online gateway, branch cash collection, one payments ledger, active/closed)
-- [ ] Phase 5: Admin and audit
+- [x] Phase 5: Admin and audit (append-only audit log, login lockout, OTP limit, IT admin staff management)
 - [ ] Phase 6: Demo-ready
 
 ## Run it (Windows PowerShell)
@@ -70,6 +70,11 @@ Open http://127.0.0.1:8000. You should see the red DEMO banner at the top.
 - **Cash at the branch (branch agent):** log in as `9000000004`, *Collect a cash EMI*, type the loan ID,
   then type the exact amount due. The phone shows masked; no PAN, Aadhaar or KYC documents appear.
   Finance's loan book shows online vs cash totals from the same ledger.
+- **Lockout:** type a wrong password 5 times. The account is locked for 15 minutes, even with the right password.
+  IT admin can *Unlock* it.
+- **IT admin:** log in as `9000000003`. *Staff accounts*: add, deactivate, unlock, reset a password
+  (temporary passwords are shown once). *Audit log*: filter by category or customer to see e.g. who viewed
+  a customer's KYC, who disbursed and who collected cash, plus every 403.
 - **See the "ACL" working:** log in as a customer and open http://127.0.0.1:8000/staff, and you get **403 Forbidden**.
   Log out and open it again, and you are sent to the login page. As branch agent (`9000000004`),
   a KYC document link gives **403**. Another customer opening `/loans/<id>` of someone else's loan gets **404**.
@@ -93,13 +98,14 @@ app/
   security.py    # argon2 passwords, JWT login cookie
   seed.py        # demo staff accounts
   templating.py  # Jinja2 setup
-  models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment, Payment
+  models/        # tables: User, OtpCode, KycRecord, KycDocument, Loan, Installment, Payment, AuditEvent
   schemas/       # form validation (phone, OTP, password, PAN, Aadhaar, loan application)
   services/      # otp, verhoeff, crypto (Fernet + masking), uploads, kyc,
-                 # money (paise + ₹ formatting), emi, decision (50% rule), loans, payments
+                 # money (paise + ₹ formatting), emi, decision (50% rule), loans, payments,
+                 # audit (log + IP middleware), login (lockout), staff (IT admin actions)
   routers/       # auth, customer, kyc (customer + support review + documents),
                  # loans (customer + finance loan book/disbursal),
-                 # payments (online gateway + branch cash), staff
+                 # payments (online gateway + branch cash), staff, admin (staff accounts + audit log)
   templates/     # HTML pages (base.html holds the demo banner)
   static/        # CSS
 alembic/         # database migrations

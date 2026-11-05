@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.db import utcnow
 from app.models import InstallmentStatus, Loan, LoanStatus, Payment, PaymentMethod, User
+from app.services.audit import record
 from app.services.money import format_inr
 
 
@@ -80,5 +81,9 @@ def record_payment(
     elif loan.status == LoanStatus.DISBURSED:
         loan.status = LoanStatus.ACTIVE
 
+    record(db, recorded_by, f"payment.{method}", target_type="loan", target_id=loan.id,
+           customer_id=loan.user_id,
+           detail=f"EMI #{installment.number} {format_inr(installment.amount_paise)} ref {reference}"
+                  + (" (loan closed)" if loan.status == LoanStatus.CLOSED else ""))
     db.commit()
     return payment

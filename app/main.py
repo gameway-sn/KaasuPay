@@ -10,10 +10,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 from app.deps import NotAuthenticated, get_optional_user
 from app.models import User
-from app.routers import auth, customer, kyc, loans, payments, staff
+from app.routers import admin, auth, customer, kyc, loans, payments, staff
+from app.services.audit import ClientIpMiddleware
 from app.templating import STATIC_DIR, render
 
 app = FastAPI(title=settings.app_name)
+
+# Lets the audit log record each request's IP address.
+app.add_middleware(ClientIpMiddleware)
 
 # /static/... serves CSS. (Uploaded ID images will NOT live here — see CLAUDE.md.)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -24,6 +28,7 @@ app.include_router(kyc.router)
 app.include_router(loans.router)
 app.include_router(payments.router)
 app.include_router(staff.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(NotAuthenticated)

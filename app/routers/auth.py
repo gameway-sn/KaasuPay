@@ -10,8 +10,10 @@ from app.deps import get_optional_user
 from app.models import Role, User
 from app.schemas.auth import PHONE_RE, RegisterForm, VerifyForm
 from app.schemas.common import error_messages
-from app.security import clear_login_cookie, hash_password, set_login_cookie, verify_password
-from app.services.otp import OtpResult, send_otp, verify_otp
+from app.security import clear_login_cookie, hash_password, set_login_cookie
+from app.services.audit import record
+from app.services.login import LOCK_MINUTES, LoginResult, attempt_login
+from app.services.otp import OtpRateLimited, OtpResult, send_otp, verify_otp
 from app.templating import render
 
 router = APIRouter()
@@ -52,7 +54,10 @@ def register_submit(
         user.full_name = form.full_name  # unfinished earlier attempt: start again
     db.commit()
 
-    send_otp(db, form.phone)
+    try:
+        send_otp(db, form.phone)
+    except OtpRateLimited as exc:
+        return render(request, "auth/register.html", {"form": typed, "errors": [str(exc)]}, status_code=429)
     return RedirectResponse(f"/register/verify?phone={form.phone}", status_code=303)
 
 
@@ -98,6 +103,10 @@ def verify_submit(
         return show_error(["No registration is waiting for this phone. Please register again."])
 
     result, tries_left = verify_otp(db, form.phone, form.otp)
+    if result is not OtpResult.OK:
+        record(db, None, "auth.otp_failed", target_type="user", target_id=user.id,
+               detail=f"{result.value}, {tries_left} tries left")
+        db.commit()
     if result is OtpResult.WRONG:
         if tries_left:
             return show_error([f"Wrong code. {tries_left} tries left."])
@@ -107,7 +116,8 @@ def verify_submit(
 
     user.password_hash = hash_password(form.password)
     user.phone_verified = True
-    db.commit()  # saves the password and marks the OTP used, together
+    record(db, user, "auth.register", target_type="user", target_id=user.id, customer_id=user.id)
+    db.commit()  # saves the password, marks the OTP used, and logs it, together
     return RedirectResponse("/login?registered=1", status_code=303)
 
 
@@ -127,10 +137,14 @@ def login_submit(
     password: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    user = db.scalars(select(User).where(User.phone == phone.strip())).first()
-    password_ok = verify_password(password, user.password_hash if user else None)
+    result, user = attempt_login(db, phone, password)
 
-    if user is None or not password_ok or not user.is_active:
+    if result is LoginResult.LOCKED:
+        # 423 = "Locked". Even the right password is refused until the lock ends.
+        return render(request, "auth/login.html", {"phone": phone, "errors": [
+            f"Too many wrong passwords. This account is locked for {LOCK_MINUTES} minutes."
+        ]}, status_code=423)
+    if result is LoginResult.BAD:
         # Same message for "no such phone" and "wrong password":
         # don't tell an attacker which phone numbers are registered.
         return render(request, "auth/login.html",
@@ -143,7 +157,10 @@ def login_submit(
 
 
 @router.post("/logout")
-def logout():
+def logout(user: User | None = Depends(get_optional_user), db: Session = Depends(get_db)):
+    if user is not None:
+        record(db, user, "auth.logout", target_type="user", target_id=user.id)
+        db.commit()
     response = RedirectResponse("/", status_code=303)
     clear_login_cookie(response)
     return response
