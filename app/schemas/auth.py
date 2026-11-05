@@ -5,7 +5,7 @@ so these server-side checks are the ones that count.
 """
 import re
 
-from pydantic import BaseModel, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 PHONE_RE = re.compile(r"[6-9][0-9]{9}")
 OTP_RE = re.compile(r"[0-9]{6}")
@@ -68,13 +68,3 @@ class VerifyForm(BaseModel):
             raise ValueError("The two passwords do not match.")
         return self
 
-
-def error_messages(exc: ValidationError) -> list[str]:
-    """Turn Pydantic's errors into short sentences we can show on the page."""
-    messages = []
-    for err in exc.errors():
-        if err["type"] == "value_error":
-            messages.append(str(err["ctx"]["error"]))
-        else:
-            messages.append(f"{err['loc'][-1]}: {err['msg']}")
-    return messages

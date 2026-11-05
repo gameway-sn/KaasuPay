@@ -118,3 +118,32 @@ button, .button {
 
 table.plain { border-collapse: collapse; }
 table.plain th, table.plain td { text-align: left; padding: 6px 12px 6px 0; vertical-align: top; }
+
+/* ---------- Phase 2: KYC ---------- */
+code { font-family: ui-monospace, Consolas, monospace; background: #eef1f5; padding: 1px 5px; border-radius: 4px; }
+small { font-weight: 400; }
+.form input[type="file"] { padding: 6px; background: #fff; }
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: #eef1f5;
+  color: var(--muted);
+}
+.badge.submitted { background: #fff4d6; color: #7a5600; }
+.badge.approved { background: #e7f5ec; color: #1d5e33; }
+.badge.rejected { background: #fdecea; color: #8a1c14; }
+
+table.list { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+table.list th, table.list td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.card { overflow-x: auto; }
+
+.docs { display: flex; flex-wrap: wrap; gap: 12px; }
+.doc { margin: 0; flex: 1 1 220px; text-align: center; }
+.doc img { max-width: 100%; max-height: 220px; border-radius: 4px; }
+.doc figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+
+.review-actions { display: flex; flex-direction: column; gap: 16px; }
+button.danger { background: #b3261e; }

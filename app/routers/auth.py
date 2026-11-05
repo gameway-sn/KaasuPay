@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import get_optional_user
 from app.models import Role, User
-from app.schemas.auth import PHONE_RE, RegisterForm, VerifyForm, error_messages
+from app.schemas.auth import PHONE_RE, RegisterForm, VerifyForm
+from app.schemas.common import error_messages
 from app.security import clear_login_cookie, hash_password, set_login_cookie, verify_password
 from app.services.otp import OtpResult, send_otp, verify_otp
 from app.templating import render

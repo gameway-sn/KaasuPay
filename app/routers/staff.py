@@ -13,6 +13,7 @@ ROLE_INFO = {
         "vlan": "VLAN 20",
         "can": "Review KYC (masked Aadhaar), approve or reject it with a reason",
         "cannot": "Any money action",
+        "links": [("KYC review queue", "/staff/kyc")],
     },
     Role.FINANCE: {
         "vlan": "VLAN 10",
@@ -32,6 +33,6 @@ ROLE_INFO = {
 }
 
 
-@router.get("")
+@router.get("", name="staff_home")
 def staff_home(request: Request, user: User = Depends(require_role(*STAFF_ROLES))):
     return render(request, "staff/home.html", {"user": user, "info": ROLE_INFO[user.role]})

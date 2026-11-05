@@ -14,6 +14,15 @@
     </table>
   </div>
 
-  <p class="muted">Your work screens arrive in the next phases (KYC queue in Phase 2,
-     disbursal in Phase 3, cash collection in Phase 4, staff admin and audit log in Phase 5).</p>
+  {% if info.links %}
+    <div class="card">
+      <h2>Your work</h2>
+      <ul>
+        {% for text, url in info.links %}<li><a href="{{ url }}">{{ text }}</a></li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <p class="muted">More work screens arrive in later phases (disbursal in Phase 3,
+     cash collection in Phase 4, staff admin and audit log in Phase 5).</p>
 {% endblock %}

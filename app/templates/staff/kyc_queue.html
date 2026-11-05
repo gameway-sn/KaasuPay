@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}KYC queue{% endblock %}
+
+{% block content %}
+  <h1>KYC review queue</h1>
+
+  <div class="card">
+    <h2>Waiting for review ({{ waiting | length }})</h2>
+    {% if waiting %}
+      <table class="list">
+        <tr><th>#</th><th>Customer</th><th>Phone</th><th>Aadhaar</th><th>Submitted (UTC)</th><th></th></tr>
+        {% for kyc in waiting %}
+          <tr>
+            <td>{{ kyc.id }}</td>
+            <td>{{ kyc.user.full_name }}</td>
+            <td>{{ kyc.user.phone }}</td>
+            <td>{{ kyc.aadhaar_masked }}</td>
+            <td>{{ kyc.submitted_at.strftime("%d %b %Y %H:%M") }}</td>
+            <td><a href="/staff/kyc/{{ kyc.id }}">Review</a></td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">Nothing waiting. 🎉</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Recently reviewed</h2>
+    {% if recent %}
+      <table class="list">
+        <tr><th>#</th><th>Customer</th><th>Result</th><th>By</th><th>Reviewed (UTC)</th></tr>
+        {% for kyc in recent %}
+          <tr>
+            <td>{{ kyc.id }}</td>
+            <td>{{ kyc.user.full_name }}</td>
+            <td><span class="badge {{ kyc.status }}">{{ kyc.status }}</span></td>
+            <td>{{ kyc.reviewed_by.full_name if kyc.reviewed_by else "" }}</td>
+            <td>{{ kyc.reviewed_at.strftime("%d %b %Y %H:%M") }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">No reviews yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}

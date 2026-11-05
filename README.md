@@ -12,7 +12,7 @@ In the project story it runs on SRV-APP (10.10.40.10, VLAN 40). See [CLAUDE.md](
 
 - [x] Phase 0: Setup (hello page, base layout with demo banner)
 - [x] Phase 1: Users and login (phone + OTP registration, argon2, JWT cookie, roles, staff seed)
-- [ ] Phase 2: KYC
+- [x] Phase 2: KYC (PAN/Aadhaar checks, Verhoeff, Fernet encryption, safe uploads, support review)
 - [ ] Phase 3: Loans
 - [ ] Phase 4: Repayments
 - [ ] Phase 5: Admin and audit
@@ -33,9 +33,10 @@ py -3.13 -m venv .venv
 # 2. Install the libraries
 pip install -r requirements.txt
 
-# 3. Create your local settings file, then put a random value in JWT_SECRET_KEY
+# 3. Create your local settings file, then fill in the two secrets
 Copy-Item .env.example .env
-python -c "import secrets; print(secrets.token_urlsafe(32))"   # paste the output into .env
+python -c "import secrets; print(secrets.token_urlsafe(32))"                              # -> JWT_SECRET_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # -> FERNET_KEY
 
 # 4. Create the database tables (run again whenever a new migration is added)
 alembic upgrade head
@@ -55,8 +56,14 @@ Open http://127.0.0.1:8000. You should see the red DEMO banner at the top.
   The OTP is printed in the **server console** (the window running uvicorn), in a `[DEMO SMS]` box.
 - **Log in as staff:** phone `9000000001` (support), `9000000002` (finance),
   `9000000003` (it_admin), `9000000004` (branch_agent). Password: `SEED_STAFF_PASSWORD` from `.env`.
+- **KYC (customer):** from the dashboard, *Start KYC*. Use a fake PAN like `ABCPE1234F`; the page
+  offers a made-up Aadhaar number with a valid checksum. Upload three small JPG/PNG/PDF files
+  (any sample picture, **never a real ID card**).
+- **KYC review (support):** log in as `9000000001`, open *KYC review queue*, approve or reject with a reason.
+  Aadhaar only ever shows as `XXXX XXXX 1234` to staff.
 - **See the "ACL" working:** log in as a customer and open http://127.0.0.1:8000/staff, and you get **403 Forbidden**.
-  Log out and open it again, and you are sent to the login page.
+  Log out and open it again, and you are sent to the login page. As branch agent (`9000000004`),
+  a KYC document link gives **403**.
 
 ## Run the tests
 
@@ -77,14 +84,14 @@ app/
   security.py    # argon2 passwords, JWT login cookie
   seed.py        # demo staff accounts
   templating.py  # Jinja2 setup
-  models/        # tables: User, OtpCode
-  schemas/       # form validation (phone, OTP, password)
-  services/      # otp.py (create, "send", check)
-  routers/       # auth.py (register/login/logout), customer.py, staff.py
+  models/        # tables: User, OtpCode, KycRecord, KycDocument
+  schemas/       # form validation (phone, OTP, password, PAN, Aadhaar)
+  services/      # otp.py, verhoeff.py, crypto.py (Fernet + masking), uploads.py, kyc.py
+  routers/       # auth.py, customer.py, kyc.py (customer + support review + documents), staff.py
   templates/     # HTML pages (base.html holds the demo banner)
   static/        # CSS
 alembic/         # database migrations
 tests/           # pytest tests
-uploads/         # KYC uploads later; gitignored
+uploads/         # KYC files under random names; gitignored, served only via /kyc/documents/{id}
 .env.example     # copy to .env; .env is never committed
 ```

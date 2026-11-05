@@ -7,10 +7,18 @@
   <p>Phone: {{ user.phone }} · verified</p>
 
   <div class="card">
-    <h2>Next steps</h2>
-    <ol>
-      <li>Complete KYC — coming in Phase 2</li>
-      <li>Apply for a loan — Phase 3</li>
-    </ol>
+    <h2>1. KYC</h2>
+    {% if not kyc %}
+      <p>Status: <span class="badge">not started</span></p>
+      <p><a class="button" href="/kyc">Start KYC</a></p>
+    {% else %}
+      <p>Status: <span class="badge {{ kyc.status }}">{{ kyc.status }}</span></p>
+      <p><a href="/kyc">{% if kyc.status == "rejected" %}See why and resubmit{% else %}View my KYC{% endif %}</a></p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>2. Loans</h2>
+    <p class="muted">Apply for a loan once your KYC is approved — coming in Phase 3.</p>
   </div>
 {% endblock %}

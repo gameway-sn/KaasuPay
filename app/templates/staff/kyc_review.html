@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Review KYC #{{ kyc.id }}{% endblock %}
+
+{% block content %}
+  <p><a href="/staff/kyc">← Back to the queue</a></p>
+  <h1>KYC #{{ kyc.id }} <span class="badge {{ kyc.status }}">{{ kyc.status }}</span></h1>
+
+  <div class="card">
+    <table class="plain">
+      <tr><th>Customer</th><td>{{ kyc.user.full_name }}</td></tr>
+      <tr><th>Phone</th><td>{{ kyc.user.phone }}</td></tr>
+      <tr><th>PAN</th><td><code>{{ kyc.pan }}</code></td></tr>
+      {# Staff only ever get the masked number. The full one is never sent to this page. #}
+      <tr><th>Aadhaar</th><td><code>{{ kyc.aadhaar_masked }}</code></td></tr>
+      {% if kyc.rejection_reason %}<tr><th>Rejected because</th><td>{{ kyc.rejection_reason }}</td></tr>{% endif %}
+    </table>
+  </div>
+
+  <div class="docs">
+    {% for doc in kyc.documents %}
+      <figure class="card doc">
+        {% if doc.is_image %}
+          <a href="/kyc/documents/{{ doc.id }}" target="_blank" rel="noopener">
+            <img src="/kyc/documents/{{ doc.id }}" alt="{{ doc.label }}">
+          </a>
+        {% else %}
+          <a href="/kyc/documents/{{ doc.id }}" target="_blank" rel="noopener">Open PDF</a>
+        {% endif %}
+        <figcaption>{{ doc.label }} · {{ (doc.size_bytes / 1024) | round(1) }} KB</figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+
+  {% if kyc.status == "submitted" %}
+    <div class="card review-actions">
+      {% include "_form_errors.html" %}
+      <form method="post" action="/staff/kyc/{{ kyc.id }}/approve">
+        <button type="submit">Approve KYC</button>
+      </form>
+
+      <form method="post" action="/staff/kyc/{{ kyc.id }}/reject" class="form">
+        <label>Reason for rejecting (the customer will see this)
+          <input name="reason" maxlength="300" placeholder="e.g. Selfie is blurred, please upload a clear one">
+        </label>
+        <button type="submit" class="danger">Reject KYC</button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

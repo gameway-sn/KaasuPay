@@ -11,6 +11,9 @@ alembic==1.14.0
 argon2-cffi==23.1.0
 PyJWT==2.10.1
 
+# Phase 2 — KYC
+cryptography==44.0.0   # Fernet encryption for Aadhaar
+
 # Tests
 pytest==8.3.4
 httpx==0.28.1

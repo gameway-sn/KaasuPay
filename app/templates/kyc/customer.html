@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}KYC{% endblock %}
+
+{% block content %}
+  <h1>Know Your Customer (KYC)</h1>
+
+  {% if kyc and kyc.status == "submitted" %}
+    <div class="notice">
+      Your KYC was submitted and is waiting for our support team.
+      Aadhaar on file: <strong>{{ kyc.aadhaar_masked }}</strong>.
+    </div>
+  {% elif kyc and kyc.status == "approved" %}
+    <div class="notice">
+      Your KYC is <strong>approved</strong>. You can apply for a loan (coming in Phase 3).
+    </div>
+  {% elif kyc and kyc.status == "rejected" %}
+    <div class="errors">
+      Your KYC was <strong>rejected</strong>. Reason: {{ kyc.rejection_reason }}<br>
+      Please fix this and submit again below.
+    </div>
+  {% endif %}
+
+  {% if kyc and kyc.documents %}
+    <div class="card">
+      <h2>Your documents</h2>
+      <ul>
+        {% for doc in kyc.documents %}
+          <li><a href="/kyc/documents/{{ doc.id }}" target="_blank" rel="noopener">{{ doc.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if can_submit %}
+    <p>This is a <strong>simulation</strong>. Nothing is sent to UIDAI, DigiLocker or NSDL.
+       Use fake numbers and sample pictures only, <strong>never a photo of a real ID card</strong>.</p>
+
+    <form method="post" action="/kyc" enctype="multipart/form-data" class="card form">
+      {% include "_form_errors.html" %}
+
+      <label>PAN (fake, e.g. ABCPE1234F)
+        <input name="pan" value="{{ form.pan or '' }}" maxlength="10" pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]"
+               autocomplete="off" required>
+      </label>
+
+      <label>Aadhaar number (fake)
+        <input name="aadhaar" value="{{ form.aadhaar or '' }}" maxlength="14" inputmode="numeric"
+               autocomplete="off" required>
+        <small class="muted">Need one? Here is a made-up number with a valid checksum:
+          <code>{{ sample_aadhaar }}</code></small>
+      </label>
+
+      {% for field, label in [("id_front", labels["id_front"]), ("id_back", labels["id_back"]), ("selfie", labels["selfie"])] %}
+        <label>{{ label }} — JPG, PNG or PDF, max 2 MB
+          <input type="file" name="{{ field }}" accept=".jpg,.jpeg,.png,.pdf" required>
+        </label>
+      {% endfor %}
+
+      <button type="submit">Submit KYC</button>
+    </form>
+  {% endif %}
+
+  <p><a href="/dashboard">Back to my dashboard</a></p>
+{% endblock %}

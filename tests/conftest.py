@@ -5,8 +5,11 @@ kaasupay.db and never affect each other.
 """
 import os
 
+from cryptography.fernet import Fernet
+
 # Set BEFORE importing the app: settings are read when app.config is imported.
 os.environ["JWT_SECRET_KEY"] = "test-only-secret-key-at-least-32-characters"
+os.environ["FERNET_KEY"] = Fernet.generate_key().decode()
 os.environ["DATABASE_URL"] = "sqlite://"
 
 import pytest  # noqa: E402
@@ -15,12 +18,21 @@ from sqlalchemy import create_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
+from app.config import settings  # noqa: E402
 from app.db import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Role, User  # noqa: E402
 from app.security import hash_password  # noqa: E402
 
 TEST_PASSWORD = "Passw0rd!"
+
+
+@pytest.fixture(autouse=True)
+def upload_dir(tmp_path, monkeypatch):
+    """Uploads in tests go to a temporary folder, never the real uploads/."""
+    folder = tmp_path / "uploads"
+    monkeypatch.setattr(settings, "upload_dir", folder)
+    return folder
 
 
 @pytest.fixture
